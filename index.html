@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07111f">
-<title>智路哨兵实时地图极速版</title>
+<title>智路哨兵免登录直达版</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{--bg:#07111f;--card:#10233f;--line:rgba(102,172,255,.22);--text:#eef7ff;--muted:#8fa9c7;--blue:#2d8cff;--green:#22e2a0;--yellow:#ffd15c;--orange:#ff9f43;--red:#ff5b6b}
@@ -65,11 +65,12 @@
 .weatherCacheTag{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(45,140,255,.14);color:#9fd0ff;font-size:10px}
 
 
-/* 实时地图极速版：真实高德地图优先显示，路线直接用车辆GPS轨迹，不再等待驾车规划 */
+/* 免登录直达版：真实高德地图优先显示，路线直接用车辆GPS轨迹，不再等待驾车规划 */
 .mapWrap.realtimeOnline .amapReal{display:block}
 .mapWrap.realtimeOnline svg{opacity:0!important;pointer-events:none!important}
 .fastStatus{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(34,226,160,.16);color:#8ff1c8;font-size:10px}
 
+.hide{display:none!important}
 </style>
 
 <script>
@@ -82,7 +83,7 @@ window._AMapSecurityConfig = {
 </head>
 <body>
 <div class="shell">
-<div class="login" id="login"><div style="width:100%"><div class="logo" style="margin:auto;width:70px;height:70px;border-radius:22px">🛡️</div><h1>智路哨兵</h1><p>永川真实地形 · 增强版</p><input class="input" id="email" value="operator@zls.local"><input class="input" id="password" type="password" value="123456"><button class="btn" id="loginBtn" style="width:100%;margin-top:12px">进入工作台</button><p style="font-size:12px">实时地图极速版</p></div></div>
+<div class="login hide" id="login" style="display:none!important"><div style="width:100%"><div class="logo" style="margin:auto;width:70px;height:70px;border-radius:22px">🛡️</div><h1>智路哨兵</h1><p>永川真实地形 · 增强版</p><input class="input" id="email" value="operator@zls.local"><input class="input" id="password" type="password" value="直接进入"><button class="btn" id="loginBtn" style="width:100%;margin-top:12px">进入系统</button><p style="font-size:12px">免登录直达版</p></div></div>
 <div class="statusbar"><span id="clock">--:--:--</span><span>5G ▰▰▰</span></div>
 <header class="header"><div class="brand"><div class="logo">🛡️</div><div><h1>智路哨兵</h1><p>多车安全预警监测平台</p></div></div><div class="badge" id="topWeather"><span class="weatherIcon">🌫️</span></div></header>
 <main class="pages">
@@ -612,7 +613,13 @@ function renderAlertVehicleData(d,v,nearestS,nearestD){E.alertVehicleData.innerH
 function renderWarnings(d,v,nearestS,nearestD){const staticNear=nearestS.distance<92,dynamicNear=nearestD&&nearestD.distance<112;let items=[];if(dynamicNear)items.push({...nearestD,source:'动态目标跟踪',risk:nearestD.level,kind:'dynamic'});if(staticNear)items.push({...nearestS,source:'静态障碍/路面凹陷检测',risk:nearestS.level,kind:'static'});items.sort((a,b)=>(a.distance||999)-(b.distance||999));const main=items[0];E.warnCount.textContent=items.length;if(main){E.mainWarning.innerHTML=`<h3 style="margin:0 0 8px">${main.kind==='dynamic'?'动态目标预警':'静态障碍预警'}</h3><p class="notice">${v.vehicle_type}｜${activeWeatherIcon()} ${activeWeatherText()}｜${activeWeatherCity()}｜${v.site}</p><p class="notice">目标：${main.type}｜等级：${main.risk}｜距离：${(main.distance||0).toFixed(1)} px 等效近距离</p><p class="notice">说明：${main.detail}</p><p class="notice">实时天气：${activeWeatherIcon()} ${activeWeatherText()}｜温度 ${activeWeatherTemp()}℃｜湿度 ${activeWeatherHumidity(d.humidity.toFixed(1))}%｜风况 ${activeWeatherWind()}</p><p class="notice">建议：${main.note}</p>`}else{E.mainWarning.innerHTML='<h3 style="margin:0 0 8px">当前暂无近距离预警</h3><p class="notice">车辆未进入动态目标或静态障碍的近距离预警范围，系统持续跟踪位置并实时刷新距离。当前预警气象源：${activeWeatherIcon()} ${activeWeatherText()}｜${activeWeatherCity()}。</p>'}E.eventList.innerHTML=items.length?items.map(it=>`<div class="event"><div class="eventTop"><b><span class="tag ${levelClass(it.risk)}">${it.risk}</span> ${it.type}</b><span>${it.kind==='dynamic'?'动态':'静态'}</span></div><p>${it.detail}</p><p>距离：${(it.distance||0).toFixed(1)} px｜来源：${it.source}</p><p>实时天气：${activeWeatherIcon()} ${activeWeatherText()}｜温度 ${activeWeatherTemp()}℃｜湿度 ${activeWeatherHumidity(d.humidity.toFixed(1))}%</p><p style="color:#8fb0cf">建议：${it.note}</p></div>`).join(''):'<div class="event"><div class="eventTop"><b>预警列表隐藏</b><span>未靠近</span></div><p>车辆靠近动态目标、静态障碍或路面凹陷后，这里会自动显示详细预警。</p></div>';let riskLevel='低风险',riskText='车辆在线，当前无近距离高危事件',riskEmoji='✓';if(dynamicNear&&nearestD.level==='高风险'||staticNear&&nearestS.level==='高风险'){riskLevel='高风险';riskText=dynamicNear&&nearestD.level==='高风险'?nearestD.detail:nearestS.detail;riskEmoji='!'}else if(dynamicNear||staticNear){riskLevel='中风险';riskText=dynamicNear?nearestD.detail:nearestS.detail;riskEmoji='!'}E.riskLevel.textContent=riskLevel;E.riskLevel.style.color=levelColor(riskLevel);E.riskDesc.textContent=riskText;E.riskIcon.textContent=riskEmoji;E.riskBox.style.borderColor=riskLevel==='高风险'?'rgba(255,91,107,.5)':riskLevel==='中风险'?'rgba(255,209,92,.5)':'rgba(34,226,160,.35)'}
 function renderFrame(){try{const v=currentVehicle,d=currentStream(v),idx=frame%ZLS.streams[v.id].length,car=posOnRoute(v.route,idx/(ZLS.streams[v.id].length-1)),nearestS=nearestStatic(v,car),nearestD=nearestDynamic(v,car,idx),staticNear=nearestS.distance<92,dynamicNear=nearestD&&nearestD.distance<112;const mp=routeProgress(idx,v);E.routeTotal.textContent=mp.totalKm.toFixed(1);E.routeDone.textContent=mp.done.toFixed(2);E.routeLeft.textContent=mp.left.toFixed(2);E.routePercent.textContent=mp.percent+'% 进度';E.mapTotalKm.textContent=mp.totalKm.toFixed(1);E.mapDoneKm.textContent=mp.done.toFixed(2);E.mapLeftKm.textContent=mp.left.toFixed(2);E.mileageFill.style.width=mp.percent+'%';E.speed.textContent=d.speed.toFixed(1);E.accuracy.textContent=d.accuracy.toFixed(2);E.latency.textContent=d.latency;E.net.textContent=d.network_status;syncWeatherIcons();E.humidity.textContent=d.humidity.toFixed(1);E.visibility.textContent=d.visibility;E.rainfall.textContent=d.rainfall.toFixed(1);E.satellites.textContent=d.satellites;E.perception.textContent=d.perception_confidence.toFixed(1);E.dynamicName.textContent=nearestD?nearestD.type:'暂无';E.dynamicInfo.textContent=nearestD?nearestD.detail:'当前无活动动态目标';E.staticName.textContent=nearestS.type;E.staticInfo.textContent=nearestS.detail;E.dynamicDist.textContent=nearestD?nearestD.distance.toFixed(1)+' px':'--';E.staticDist.textContent=nearestS.distance.toFixed(1)+' px';E.roadImpact.textContent=d.road_impact_g.toFixed(2);E.obstacleConf.textContent=d.obstacle_confidence.toFixed(1);E.carPin.style.left=car[0]+'px';E.carPin.style.top=car[1]+'px';E.carRing.style.left=car[0]+'px';E.carRing.style.top=car[1]+'px';E.staticPin.style.left=nearestS.x+'px';E.staticPin.style.top=nearestS.y+'px';E.staticPin.classList.toggle('hidden',!staticNear);if(nearestD){E.dynamicPin.style.left=nearestD.x+'px';E.dynamicPin.style.top=nearestD.y+'px'}E.dynamicPin.classList.toggle('hidden',!(dynamicNear&&nearestD));const riskTarget=dynamicNear&&(!staticNear||nearestD.distance<nearestS.distance)?nearestD:staticNear?nearestS:null;if(riskTarget){E.riskPin.style.left=(riskTarget.x)+'px';E.riskPin.style.top=(riskTarget.y)+'px';E.riskPin.classList.remove('hidden');E.carRing.classList.add('warn')}else{E.riskPin.classList.add('hidden');E.carRing.classList.remove('warn')}if(dynamicNear&&staticNear)E.nearBadge.innerHTML='已进入双重预警范围<br>动态+静态目标已显示';else if(dynamicNear)E.nearBadge.innerHTML='接近动态目标<br>动态目标已显示';else if(staticNear)E.nearBadge.innerHTML='接近静态障碍<br>障碍/凹陷已显示';else E.nearBadge.innerHTML='预警范围外<br>标识暂未触发';E.mapSite.textContent=v.site;E.coord.textContent=d.latitude+', '+d.longitude;E.siteType.textContent=v.site_type;E.mapSpeed.textContent=d.speed.toFixed(1);E.mapVisibility.textContent=d.visibility;E.mapDynamic.textContent=nearestD?`${nearestD.type} / ${nearestD.distance.toFixed(1)} px`:'暂无';E.mapStatic.textContent=`${nearestS.type} / ${nearestS.distance.toFixed(1)} px`;renderTrail(car);updateAmapLive(d,v,idx,nearestS,nearestD,staticNear,dynamicNear,mp);renderWarnings(d,v,nearestS,nearestD);renderAlertVehicleData(d,v,nearestS,nearestD);E.hash.textContent=DATA_HASH;frame++}catch(err){console.error(err)}}
 function showDrawer(title,text){E.drawerTitle.textContent=title;E.drawerText.innerHTML=text;E.drawer.classList.add('show')}function showWeatherStrategy(){showDrawer('气象策略',`当前场景天气：${weatherIcon(currentVehicle.weather)}<br>系统以 1 Hz 刷新能见度、湿度和雨量；定位精度保持在 0.2 m 级；根据大雾、小雨、大雨分别调整识别阈值和预警距离。`)}function showRoadStrategy(){showDrawer('路面检测策略','系统同时跟踪静态障碍与动态目标。<br>静态障碍包含井盖下沉、坑洼、锥桶、落石；动态目标包含行人、自行车、汇入车辆。<br>车辆靠近后地图标识和预警列表自动弹出，并持续实时刷新位置与距离。')}function showMapInfo(){showDrawer('地图说明','增强版采用“永川地形特征 + 卫星底图质感”的离线工程地图：<br>兴龙湖：湖岸、环湖道路、山地弯道；<br>凤凰湖产业园：缓丘、产业建筑、园区路网；<br>茶山竹海：坡道、等高线、竹林与发卡弯。')}function showSafety(){showDrawer('安全边界','安全预警模块仅监听车辆和环境数据，不控制车辆。<br>CAN 接口采用 Listen-only 模式；预警结果仅用于辅助提醒、数据记录和后台监管。')}
-document.querySelectorAll('.tab').forEach(tab=>{tab.onclick=()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===tab));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===tab.dataset.page));if(tab.dataset.page==='map'){requestOnlineMap();if(amap&&amap.resize)setTimeout(()=>amap.resize(),120);}}});E.loginBtn.onclick=()=>{if(E.password.value==='123456'){E.login.classList.add('hide');toast('登录成功，实时数据已启动')}else toast('密码错误')};window.addEventListener('error',e=>console.error(e.message));try{selectVehicle(currentVehicle)}catch(e){console.error('selectVehicle failed',e)};try{loadCachedWeather&&loadCachedWeather()}catch(e){};setTimeout(()=>{try{fetchYongchuanWeather&&fetchYongchuanWeather(true)}catch(e){console.warn(e)}},300);setTimeout(()=>{try{preloadOnlineMap&&preloadOnlineMap()}catch(e){console.warn(e)}},500);setInterval(()=>{try{fetchYongchuanWeather&&fetchYongchuanWeather(true)}catch(e){console.warn(e)}},10*60*1000);setInterval(()=>{try{renderFrame()}catch(e){console.error('renderFrame failed',e)}},1000);if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).finally(()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+document.querySelectorAll('.tab').forEach(tab=>{tab.onclick=()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===tab));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===tab.dataset.page));if(tab.dataset.page==='map'){requestOnlineMap();if(amap&&amap.resize)setTimeout(()=>amap.resize(),120);}}});E.loginBtn.onclick=()=>{
+  try{
+    E.login.style.display='none';
+    E.login.classList.add('hide');
+    toast('已进入系统，实时数据已启动');
+  }catch(e){console.warn('login fallback',e)}
+};window.addEventListener('error',e=>console.error(e.message));try{selectVehicle(currentVehicle)}catch(e){console.error('selectVehicle failed',e)};try{loadCachedWeather&&loadCachedWeather()}catch(e){};setTimeout(()=>{try{fetchYongchuanWeather&&fetchYongchuanWeather(true)}catch(e){console.warn(e)}},300);setTimeout(()=>{try{preloadOnlineMap&&preloadOnlineMap()}catch(e){console.warn(e)}},500);setInterval(()=>{try{fetchYongchuanWeather&&fetchYongchuanWeather(true)}catch(e){console.warn(e)}},10*60*1000);setInterval(()=>{try{renderFrame()}catch(e){console.error('renderFrame failed',e)}},1000);if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).finally(()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 
 window.addEventListener('unhandledrejection', e=>{
   console.warn('Promise fallback', e.reason);
@@ -626,6 +633,27 @@ setTimeout(()=>{
     }
   }catch(e){}
 },2500);
+
+
+setTimeout(()=>{
+  try{
+    if(E && E.login) E.login.classList.add('hide');
+  }catch(e){}
+},300);
+
+
+(function(){
+  try{
+    const login=document.getElementById('login');
+    if(login){
+      login.style.display='none';
+      login.classList.add('hide');
+    }
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+    }
+  }catch(e){}
+})();
 
 </script>
 </body></html>
