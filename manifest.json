@@ -1,0 +1,9 @@
+{
+  "name": "智路哨兵实时地图极速版",
+  "short_name": "智路哨兵",
+  "start_url": "index.html?v=realtime_map_fast",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "description": "高德真实地图实时轨迹极速响应版"
+}
