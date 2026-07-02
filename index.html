@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>智路哨兵｜车辆识别置信度100版</title>
+<title>智路哨兵｜高德实际道路路线版</title>
 <meta name="theme-color" content="#09111f">
 <script>
 window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b" };
 </script>
-<script defer src="https://webapi.amap.com/maps?v=2.0&key=78ebda4463394214bea672422bb87f6e&plugin=AMap.Scale"></script>
+<script defer src="https://webapi.amap.com/maps?v=2.0&key=78ebda4463394214bea672422bb87f6e&plugin=AMap.Scale,AMap.Driving"></script>
 <style>
 :root{--bg:#06101f;--panel:#0b1728;--panel2:#101f35;--line:rgba(255,255,255,.12);--text:#f8fbff;--muted:#9fb0c4;--blue:#2b95ff;--red:#ff3b30;--gold:#e9b75a;--green:#28d88e;--warn:#ffb84d;--shadow:0 18px 46px rgba(0,0,0,.38)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;background:#030814;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;overflow:hidden}button,input{font-family:inherit}.app{height:100%;max-width:480px;margin:0 auto;position:relative;overflow:hidden;background:radial-gradient(circle at 85% 0,rgba(43,149,255,.35),transparent 28%),linear-gradient(180deg,#07152a,#060a13 58%,#04070d);box-shadow:0 0 0 1px rgba(255,255,255,.08)}
@@ -67,6 +67,12 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
 .recogLoading{background:rgba(255,184,77,.14)!important;color:#ffdc9b!important}
 @media(max-width:390px){.recognitionPanel{grid-template-columns:1fr 1fr}.recogBox b{font-size:16px}}
 
+
+.actualRouteTag{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:rgba(40,216,142,.15);color:#a8f4cd;font-size:10px}
+.routePlanning{background:rgba(255,184,77,.14)!important;color:#ffdc9b!important}
+.routeReady{background:rgba(40,216,142,.14)!important;color:#a8f4cd!important}
+.routeFallback{background:rgba(255,59,48,.13)!important;color:#ffb6b0!important}
+
 </style>
 </head>
 <body>
@@ -102,9 +108,9 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
       <div class="card"><h3 class="title">实际路线进度 <span class="pill" id="routePercent">0%</span></h3><div class="progress"><span id="mileBar"></span></div><div class="grid3" style="margin-top:10px"><div class="metric"><small>路线总长</small><b><span id="routeTotal">--</span></b><em>km</em></div><div class="metric"><small>已行驶</small><b><span id="routeDone">--</span></b><em>km</em></div><div class="metric"><small>剩余距离</small><b><span id="routeLeft">--</span></b><em>km</em></div></div></div>
     </section>
     <section class="page" id="mapPage">
-      <div class="card"><h3 class="title">实时地图 <span class="pill" id="mapStatus">本地实际路线</span></h3><p class="mini">手机端优先保证地图可用；高德底图加载成功后只显示真实在线地图和车辆轨迹，加载慢或域名未授权时自动回退本地实际路线。</p><div class="btns"><button class="btn" id="onlineMapBtn">加载高德地图</button><button class="btn secondary" id="offlineMapBtn">使用本地地图</button></div><div class="mapStateBox">
+      <div class="card"><h3 class="title">实时地图 <span class="pill" id="mapStatus">本地实际路线</span></h3><p class="mini">三条测试路线按高德实际道路规划；高德底图加载成功后，蓝色路线和绿色已行驶轨迹沿真实道路绘制，加载失败时自动回退本地实际路线。</p><div class="btns"><button class="btn" id="onlineMapBtn">加载高德地图</button><button class="btn secondary" id="offlineMapBtn">使用本地地图</button></div><div class="mapStateBox">
         <div class="stateChip"><b id="baseMapState">本地实际路线已加载</b><span>手机端默认可用</span></div>
-        <div class="stateChip"><b id="amapState">高德底图待加载</b><span>点击按钮后加载</span></div>
+        <div class="stateChip"><b id="amapState">高德实际路线待规划</b><span>点击按钮后加载</span></div>
       </div></div>
       <div class="mapBox offline" id="mapBox"><div class="amap" id="amap"></div><div class="offlineMap" id="offlineMap"></div><div class="mapBadge" id="mapBadge">本地实际路线｜实时更新</div><div class="mapPanel"><div class="row"><b id="mapVehicle">--</b><span class="pill" id="mapRoad">--</span></div><p class="mini" id="mapMileage">--</p><div class="progress"><span id="mapProgress"></span></div></div></div>
     </section>
@@ -176,7 +182,70 @@ const QW_KEY='d86f49c9937549649326230edaa587dd';
 const QW_LOC='105.915520,29.344820';
 const $=id=>document.getElementById(id);
 const E={login:$('login'),loginUser:$('loginUser'),loginPass:$('loginPass'),loginBtn:$('loginBtn'),clock:$('clock'),topWeather:$('topWeather'),heroWeather:$('heroWeather'),vehicleTitle:$('vehicleTitle'),vehicleSub:$('vehicleSub'),selfCheck:$('selfCheck'),speed:$('speed'),accuracy:$('accuracy'),riskLevel:$('riskLevel'),riskDesc:$('riskDesc'),vehicleList:$('vehicleList'),routePercent:$('routePercent'),mileBar:$('mileBar'),routeTotal:$('routeTotal'),routeDone:$('routeDone'),routeLeft:$('routeLeft'),mapStatus:$('mapStatus'),onlineMapBtn:$('onlineMapBtn'),offlineMapBtn:$('offlineMapBtn'),mapBox:$('mapBox'),amap:$('amap'),offlineMap:$('offlineMap'),mapBadge:$('mapBadge'),mapVehicle:$('mapVehicle'),mapRoad:$('mapRoad'),mapMileage:$('mapMileage'),mapProgress:$('mapProgress'),mainAlert:$('mainAlert'),testAlertBtn:$('testAlertBtn'),eventList:$('eventList'),weatherSource:$('weatherSource'),weatherText:$('weatherText'),weatherCity:$('weatherCity'),humidity:$('humidity'),windText:$('windText'),temp:$('temp'),reportTime:$('reportTime'),visibility:$('visibility'),forecast:$('forecast'),dataGrid:$('dataGrid'),recognitionStatus:$('recognitionStatus'),recogBrand:$('recogBrand'),recogModel:$('recogModel'),recogSource:$('recogSource'),recogBody:$('recogBody'),recogVin:$('recogVin'),recogConfidence:$('recogConfidence'),recognizeBtn:$('recognizeBtn'),baseMapState:$('baseMapState'),amapState:$('amapState'),toast:$('toast')};
-let current=ROUTES[0], tick=0, amap=null, amapReady=false, routeLine=null, doneLine=null, markers={}, eventCache=[], manualAlert=false, weather={realtime:false,icon:'🌧️',text:'大雨',temp:24,humidity:86,wind:'东北风 2级',visibility:820,source:'本地兜底',time:'--',forecast:[['今天','🌧️','大雨','23~27℃'],['明天','🌦️','阵雨','22~28℃'],['后天','🌫️','雾','21~26℃']]};
+let current=ROUTES[0], tick=0, amap=null, amapReady=false, routeLine=null, doneLine=null, drivingService=null, actualRouteCache={}, markers={}, eventCache=[], manualAlert=false, weather={realtime:false,icon:'🌧️',text:'大雨',temp:24,humidity:86,wind:'东北风 2级',visibility:820,source:'本地兜底',time:'--',forecast:[['今天','🌧️','大雨','23~27℃'],['明天','🌦️','阵雨','22~28℃'],['后天','🌫️','雾','21~26℃']]};
+
+function liveRoute(v=current){
+  return (v && v.actualRoute && v.actualRoute.length>2) ? v.actualRoute : v.route;
+}
+function routePlanRequestPoints(v){
+  const pts=v.route||[];
+  if(pts.length<3) return null;
+  const start=pts[0];
+  let end=pts[pts.length-1];
+  if(Math.abs(start[0]-end[0])<0.00001 && Math.abs(start[1]-end[1])<0.00001) end=pts[pts.length-2];
+  const raw=pts.slice(1,pts.length-1);
+  const step=Math.max(1,Math.ceil(raw.length/8));
+  const waypoints=raw.filter((p,i)=>i%step===0);
+  return {start,end,waypoints};
+}
+function setActualRouteStatus(text,cls=''){
+  if(E.mapStatus) E.mapStatus.textContent=text;
+  if(E.amapState){
+    E.amapState.textContent=text;
+    E.amapState.classList.remove('routePlanning','routeReady','routeFallback');
+    if(cls) E.amapState.classList.add(cls);
+  }
+}
+function ensureDriving(){
+  if(drivingService) return true;
+  if(!window.AMap || !AMap.Driving) return false;
+  try{
+    drivingService=new AMap.Driving({policy:AMap.DrivingPolicy.LEAST_TIME,autoFitView:false,hideMarkers:true});
+    return true;
+  }catch(e){return false}
+}
+function planActualAmapRoute(v=current,force=false){
+  if(!amapReady || !amap || !ensureDriving()){
+    setActualRouteStatus('高德实际路线待规划','routePlanning');
+    return;
+  }
+  if(actualRouteCache[v.id] && !force){
+    v.actualRoute=actualRouteCache[v.id];
+    setActualRouteStatus('高德实际道路路线','routeReady');
+    resetAmap();
+    return;
+  }
+  const req=routePlanRequestPoints(v);
+  if(!req){setActualRouteStatus('本地实际路线','routeFallback');return;}
+  setActualRouteStatus('高德实际路线规划中','routePlanning');
+  drivingService.search(req.start,req.end,{waypoints:req.waypoints},(status,result)=>{
+    try{
+      if(status==='complete' && result && result.routes && result.routes[0]){
+        const path=[];
+        result.routes[0].steps.forEach(step=>(step.path||[]).forEach(pt=>path.push([pt.lng,pt.lat])));
+        if(path.length>2){
+          v.actualRoute=path; actualRouteCache[v.id]=path; tick=0;
+          setActualRouteStatus('高德实际道路路线','routeReady');
+          resetAmap(); frame(); toast('已按高德实际道路重绘路线');
+          return;
+        }
+      }
+      setActualRouteStatus('路线规划失败，使用本地实际路线','routeFallback');
+      toast('高德路线规划失败，已保留本地实际路线');
+    }catch(e){setActualRouteStatus('路线规划异常，使用本地实际路线','routeFallback')}
+  });
+}
+
 function toast(msg){E.toast.textContent=msg;E.toast.classList.add('show');setTimeout(()=>E.toast.classList.remove('show'),1800)}
 function fmt(n,d=1){return Number(n).toFixed(d)}
 
@@ -214,20 +283,20 @@ function iconOf(w){w=String(w||'');if(w.includes('雾'))return '🌫️';if(w.in
 function interp(points,t){const n=points.length-1;if(n<=0)return points[0];const f=t*n;const i=Math.min(n-1,Math.floor(f));const r=f-i;return [points[i][0]+(points[i+1][0]-points[i][0])*r, points[i][1]+(points[i+1][1]-points[i][1])*r]}
 function bounds(points){let xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);return [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)]}
 function project(route, lnglat){const b=bounds(route), pad=48, w=480, h=430;let x=pad+(lnglat[0]-b[0])/(b[1]-b[0]||1)*(w-pad*2);let y=h-pad-(lnglat[1]-b[2])/(b[3]-b[2]||1)*(h-pad*2);return [x,y]}
-function projectedRoute(){return current.route.map(p=>project(current.route,p))}
+function projectedRoute(){const r=liveRoute();return r.map(p=>project(r,p))}
 function progress(){return (tick%260)/260}
-function data(){const p=progress();const geo=interp(current.route,p);const speed=(current.id==='taxi'?42:current.id==='bus'?32:24)+Math.sin(tick/7)*4;const accuracy=0.18+Math.abs(Math.sin(tick/13))*0.05;return {p,geo,px:project(current.route,geo),speed,accuracy,done:current.km*p,left:current.km-current.km*p,percent:Math.round(p*100)}}
-function objectPos(o){return interp(current.route,o.p)}
-function nearest(d){let best=null;current.objects.forEach(o=>{const op=project(current.route,objectPos(o));const dist=Math.hypot(op[0]-d.px[0],op[1]-d.px[1]);if(!best||dist<best.dist)best={...o,dist,px:op,geo:objectPos(o)}});return best}
+function data(){const route=liveRoute();const p=progress();const geo=interp(route,p);const speed=(current.id==='taxi'?42:current.id==='bus'?32:24)+Math.sin(tick/7)*4;const accuracy=0.18+Math.abs(Math.sin(tick/13))*0.05;return {p,geo,px:project(route,geo),speed,accuracy,done:current.km*p,left:current.km-current.km*p,percent:Math.round(p*100)}}
+function objectPos(o){return interp(liveRoute(),o.p)}
+function nearest(d){let best=null;const route=liveRoute();current.objects.forEach(o=>{const op=project(route,objectPos(o));const dist=Math.hypot(op[0]-d.px[0],op[1]-d.px[1]);if(!best||dist<best.dist)best={...o,dist,px:op,geo:objectPos(o)}});return best}
 function risk(d,obj){if(manualAlert)return {level:'高风险',desc:'手动测试预警已触发',cls:'danger'};if(obj.dist<44)return {level:'高风险',desc:obj.t+'距离过近',cls:'danger'};if(obj.dist<82)return {level:'中风险',desc:'接近'+obj.t,cls:'warn'};if(weather.text.includes('雾')||weather.text.includes('大雨'))return {level:'关注',desc:'恶劣天气辅助预警',cls:'warn'};return {level:'正常',desc:'持续监测',cls:'ok'}}
 function renderVehicles(){E.vehicleList.innerHTML=ROUTES.map(v=>{const rr=VEHICLE_RECOGNITION[v.id]||{};return `<div class="vehicle ${v.id===current.id?'active':''}" data-id="${v.id}"><b>${v.type}</b><p>${rr.brand||'车辆'}｜${rr.model||v.model}<br>${v.plate}｜${v.site}<br>天气源：${weather.icon} ${weather.text}｜${weather.realtime?'和风实时':'本地兜底'}</p></div>`}).join('');document.querySelectorAll('.vehicle').forEach(v=>v.onclick=()=>selectVehicle(v.dataset.id))}
-function selectVehicle(id){current=ROUTES.find(v=>v.id===id)||current;tick=0;manualAlert=false;E.vehicleTitle.textContent=current.type;E.vehicleSub.textContent=`${current.model}｜${current.plate}｜${current.site}`;renderVehicles();if(!weather.realtime){fallbackWeatherByVehicle()}else{syncAllWeather('车辆切换同步')};renderOffline();resetAmap();recognizeVehicle(true);toast('已切换：'+current.type)}
+function selectVehicle(id){current=ROUTES.find(v=>v.id===id)||current;tick=0;manualAlert=false;E.vehicleTitle.textContent=current.type;E.vehicleSub.textContent=`${current.model}｜${current.plate}｜${current.site}`;renderVehicles();if(!weather.realtime){fallbackWeatherByVehicle()}else{syncAllWeather('车辆切换同步')};renderOffline();resetAmap();if(amapReady)setTimeout(()=>planActualAmapRoute(current,true),120);recognizeVehicle(true);toast('已切换：'+current.type)}
 function routeStr(points){return points.map(p=>p.join(',')).join(' ')}
-function renderOffline(){const d=data(), obj=nearest(d), pr=projectedRoute(), doneN=Math.max(2,Math.floor(d.p*(pr.length-1))+1);const objs=current.objects.map(o=>{const p=project(current.route,objectPos(o));return `<g><circle cx="${p[0]}" cy="${p[1]}" r="10" fill="${o.level.includes('高')?'#ff3b30':'#ffb84d'}"/><text x="${Math.min(p[0]+13,360)}" y="${p[1]+4}" fill="#fff" font-size="11">${o.t}</text></g>`}).join('');E.offlineMap.innerHTML=`<svg viewBox="0 0 480 430" width="100%" height="100%" preserveAspectRatio="none"><defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="480" height="430" fill="#101923"/><path d="M0 122 C110 75 138 182 238 126 S360 70 480 115" stroke="rgba(255,255,255,.055)" stroke-width="52" fill="none"/><path d="M0 305 C95 250 158 335 246 245 S365 185 480 208" stroke="rgba(255,255,255,.055)" stroke-width="34" fill="none"/><polyline points="${routeStr(pr)}" fill="none" stroke="#2b95ff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><polyline points="${routeStr(pr.slice(0,doneN))}" fill="none" stroke="#28d88e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>${objs}<circle class="pulse" cx="${d.px[0]}" cy="${d.px[1]}" r="23" fill="rgba(43,149,255,.18)"/><circle class="carDot" cx="${d.px[0]}" cy="${d.px[1]}" r="10" fill="#2b95ff" filter="url(#glow)"/><text x="${d.px[0]+14}" y="${d.px[1]-12}" fill="#fff" font-size="12">${current.type}</text><text x="18" y="28" fill="#e9b75a" font-size="14">${current.road}</text><text x="18" y="408" fill="#9fb0c4" font-size="12">经纬度：${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}｜实际路线轨迹</text></svg>`}
+function renderOffline(){const d=data(), obj=nearest(d), pr=projectedRoute(), doneN=Math.max(2,Math.floor(d.p*(pr.length-1))+1);const objs=current.objects.map(o=>{const p=project(liveRoute(),objectPos(o));return `<g><circle cx="${p[0]}" cy="${p[1]}" r="10" fill="${o.level.includes('高')?'#ff3b30':'#ffb84d'}"/><text x="${Math.min(p[0]+13,360)}" y="${p[1]+4}" fill="#fff" font-size="11">${o.t}</text></g>`}).join('');E.offlineMap.innerHTML=`<svg viewBox="0 0 480 430" width="100%" height="100%" preserveAspectRatio="none"><defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="480" height="430" fill="#101923"/><path d="M0 122 C110 75 138 182 238 126 S360 70 480 115" stroke="rgba(255,255,255,.055)" stroke-width="52" fill="none"/><path d="M0 305 C95 250 158 335 246 245 S365 185 480 208" stroke="rgba(255,255,255,.055)" stroke-width="34" fill="none"/><polyline points="${routeStr(pr)}" fill="none" stroke="#2b95ff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><polyline points="${routeStr(pr.slice(0,doneN))}" fill="none" stroke="#28d88e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>${objs}<circle class="pulse" cx="${d.px[0]}" cy="${d.px[1]}" r="23" fill="rgba(43,149,255,.18)"/><circle class="carDot" cx="${d.px[0]}" cy="${d.px[1]}" r="10" fill="#2b95ff" filter="url(#glow)"/><text x="${d.px[0]+14}" y="${d.px[1]-12}" fill="#fff" font-size="12">${current.type}</text><text x="18" y="28" fill="#e9b75a" font-size="14">${current.road}</text><text x="18" y="408" fill="#9fb0c4" font-size="12">经纬度：${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}｜实际路线轨迹</text></svg>`}
 function amapMarker(text,color){return new AMap.Marker({content:`<div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:${color};color:#fff;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 16px ${color};font-size:13px;font-weight:bold">${text}</div>`,anchor:'center'})}
-function initAmap(){if(amapReady)return true;if(!window.AMap){E.mapStatus.textContent='高德加载中';if(E.amapState)E.amapState.textContent='高德底图加载中';toast('高德资源加载中，手机端已保留本地地图');return false}try{E.mapBox.classList.remove('offline');E.mapBox.classList.add('online');amap=new AMap.Map('amap',{viewMode:'2D',zoom:15,center:current.route[0],resizeEnable:true,showLabel:false,animateEnable:false,features:['bg','road'],mapStyle:'amap://styles/normal'});if(AMap.Scale)amap.addControl(new AMap.Scale());markers.car=amapMarker('车','#2b95ff');markers.obj=amapMarker('险','#ffb84d');amap.add([markers.car,markers.obj]);amapReady=true;E.mapStatus.textContent='高德在线';if(E.amapState)E.amapState.textContent='高德底图已加载';E.mapBadge.textContent=`高德在线地图｜${weather.icon} ${weather.text}｜实时同步`;resetAmap();setTimeout(()=>{try{amap.resize();amap.setFitView([routeLine],false,[70,24,148,24])}catch(e){}},180);toast('高德在线地图已加载');return true}catch(e){E.mapStatus.textContent='本地路线';if(E.amapState)E.amapState.textContent='高德底图失败，已启用本地路线';toast('手机端高德未加载，已启用本地实际路线');return false}}
-function resetAmap(){if(!amapReady||!amap)return;try{if(routeLine)amap.remove(routeLine);if(doneLine)amap.remove(doneLine);routeLine=new AMap.Polyline({path:current.route,strokeColor:'#2b95ff',strokeWeight:7,strokeOpacity:.88,showDir:true});doneLine=new AMap.Polyline({path:[current.route[0]],strokeColor:'#28d88e',strokeWeight:8,strokeOpacity:.95});amap.add([routeLine,doneLine]);amap.setFitView([routeLine],false,[70,24,148,24]);}catch(e){}}
-function updateAmap(d,obj){if(!amapReady||!amap)return;try{markers.car.setPosition(d.geo);markers.obj.setPosition(obj.geo);const doneN=Math.max(1,Math.floor(d.p*(current.route.length-1))+1);const donePath=current.route.slice(0,doneN);donePath.push(d.geo);doneLine.setPath(donePath);if(tick%7===0)amap.setCenter(d.geo)}catch(e){}}
+function initAmap(){if(amapReady)return true;if(!window.AMap){E.mapStatus.textContent='高德加载中';if(E.amapState)E.amapState.textContent='高德底图加载中';toast('高德资源加载中，手机端已保留本地地图');return false}try{E.mapBox.classList.remove('offline');E.mapBox.classList.add('online');amap=new AMap.Map('amap',{viewMode:'2D',zoom:15,center:current.route[0],resizeEnable:true,showLabel:false,animateEnable:false,features:['bg','road'],mapStyle:'amap://styles/normal'});if(AMap.Scale)amap.addControl(new AMap.Scale());markers.car=amapMarker('车','#2b95ff');markers.obj=amapMarker('险','#ffb84d');amap.add([markers.car,markers.obj]);amapReady=true;E.mapStatus.textContent='高德在线';if(E.amapState)E.amapState.textContent='高德底图已加载';E.mapBadge.textContent=`高德在线地图｜${weather.icon} ${weather.text}｜实时同步`;resetAmap();setTimeout(()=>{try{amap.resize();amap.setFitView([routeLine],false,[70,24,148,24]);planActualAmapRoute(current)}catch(e){}},180);toast('高德在线地图已加载');return true}catch(e){E.mapStatus.textContent='本地路线';if(E.amapState)E.amapState.textContent='高德底图失败，已启用本地路线';toast('手机端高德未加载，已启用本地实际路线');return false}}
+function resetAmap(){if(!amapReady||!amap)return;try{if(routeLine)amap.remove(routeLine);if(doneLine)amap.remove(doneLine);const route=liveRoute();routeLine=new AMap.Polyline({path:route,strokeColor:'#2b95ff',strokeWeight:7,strokeOpacity:.88,showDir:true});doneLine=new AMap.Polyline({path:[route[0]],strokeColor:'#28d88e',strokeWeight:8,strokeOpacity:.95});amap.add([routeLine,doneLine]);amap.setFitView([routeLine],false,[70,24,148,24]);}catch(e){}}
+function updateAmap(d,obj){if(!amapReady||!amap)return;try{markers.car.setPosition(d.geo);markers.obj.setPosition(obj.geo);const route=liveRoute();const doneN=Math.max(1,Math.floor(d.p*(route.length-1))+1);const donePath=route.slice(0,doneN);donePath.push(d.geo);doneLine.setPath(donePath);if(tick%7===0)amap.setCenter(d.geo)}catch(e){}}
 function syncAllWeather(reason='同步'){
   const tag=weather.realtime?'和风实时':'本地兜底';
   weather.source=weather.realtime?'和风实时':'本地兜底';
@@ -247,7 +316,7 @@ function syncAllWeather(reason='同步'){
     E.mapBadge.textContent=`${mode}｜${weather.icon} ${weather.text}｜实时同步`;
   }
   if(E.baseMapState) E.baseMapState.textContent='本地实际路线已加载';
-  if(E.amapState) E.amapState.textContent=amapReady?'高德底图已加载':'高德底图待加载';
+  if(E.amapState) E.amapState.textContent=amapReady?'高德底图已加载':'高德实际路线待规划';
   if(E.mapStatus && weather.realtime){
     E.mapStatus.textContent='实时地图｜天气同步';
   }
@@ -338,7 +407,7 @@ try{
   E.loginPass.addEventListener('keydown',e=>{if(e.key==='Enter')E.loginBtn.click()});
   E.loginUser.addEventListener('keydown',e=>{if(e.key==='Enter')E.loginPass.focus()});
 }catch(e){}
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===b.dataset.page));if(b.dataset.page==='mapPage')setTimeout(()=>{initAmap();if(amap&&amap.resize)amap.resize()},100)});E.onlineMapBtn.onclick=()=>initAmap();E.offlineMapBtn.onclick=()=>{E.mapBox.classList.add('offline');E.mapBox.classList.remove('online');E.mapStatus.textContent='本地实际路线';E.mapBadge.textContent=`本地实际路线｜${weather.icon} ${weather.text}｜实时同步`;toast('已切换本地实际路线')};E.testAlertBtn.onclick=()=>{manualAlert=true;frame();toast('测试预警已触发')};if(E.recognizeBtn)E.recognizeBtn.onclick=()=>recognizeVehicle(false)}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===b.dataset.page));if(b.dataset.page==='mapPage')setTimeout(()=>{initAmap();if(amap&&amap.resize)amap.resize()},100)});E.onlineMapBtn.onclick=()=>{if(initAmap())setTimeout(()=>planActualAmapRoute(current,true),160)};E.offlineMapBtn.onclick=()=>{E.mapBox.classList.add('offline');E.mapBox.classList.remove('online');E.mapStatus.textContent='本地实际路线';E.mapBadge.textContent=`本地实际路线｜${weather.icon} ${weather.text}｜实时同步`;toast('已切换本地实际路线')};E.testAlertBtn.onclick=()=>{manualAlert=true;frame();toast('测试预警已触发')};if(E.recognizeBtn)E.recognizeBtn.onclick=()=>recognizeVehicle(false)}
 function boot(){bind();try{localStorage.removeItem('zls_logged')}catch(e){};try{const c=JSON.parse(localStorage.getItem('zls_weather_cache')||'null');if(c&&c.weather){Object.assign(weather,c.weather);weather.source=weather.realtime?'和风实时缓存':'本地兜底'}}catch(e){};renderVehicles();selectVehicle(current.id);syncAllWeather('启动同步');setInterval(()=>E.clock.textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false}),500);recognizeVehicle(true);frame();setInterval(frame,1000);fetchWeather();setInterval(fetchWeather,10*60*1000);setTimeout(()=>{if(window.AMap)try{initAmap()}catch(e){}},2000);E.selfCheck.textContent='一键登录｜预警颜色同步'}
 window.addEventListener('error',e=>{E.selfCheck.textContent='已自动兜底';console.warn(e.message)});
 document.addEventListener('DOMContentLoaded',boot);
