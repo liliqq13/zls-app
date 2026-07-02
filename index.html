@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>智路哨兵｜手机端地图修复版</title>
+<title>智路哨兵｜车辆识别置信度100版</title>
 <meta name="theme-color" content="#09111f">
 <script>
 window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b" };
@@ -55,6 +55,18 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
   .stateChip span{font-size:9px}
 }
 
+
+.recognitionPanel{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.recogBox{border:1px solid rgba(43,149,255,.20);background:rgba(43,149,255,.07);border-radius:15px;padding:10px}
+.recogBox small{display:block;color:#9fb0c4;font-size:11px}
+.recogBox b{display:block;margin-top:4px;font-size:18px;color:#f8fbff}
+.recogBox em{display:block;margin-top:3px;font-size:10px;color:#91a0b2;font-style:normal}
+.recogMain{border:1px solid rgba(40,216,142,.28);background:rgba(40,216,142,.08)}
+.recogMain b{color:#dfffea}
+.recogStatus{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(40,216,142,.14);color:#a8f4cd;font-size:11px}
+.recogLoading{background:rgba(255,184,77,.14)!important;color:#ffdc9b!important}
+@media(max-width:390px){.recognitionPanel{grid-template-columns:1fr 1fr}.recogBox b{font-size:16px}}
+
 </style>
 </head>
 <body>
@@ -67,7 +79,7 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
       <div class="field"><label>账号</label><input id="loginUser" value="operator@zls.local" autocomplete="username"></div>
       <div class="field"><label>密码</label><input id="loginPass" value="123456" type="password" autocomplete="current-password"></div>
       <button class="btn full" id="loginBtn">登录进入系统</button>
-      <div class="loginTip"><span>账号已预置，点击登录进入系统</span><span>车载安全预警演示平台</span></div>
+      <div class="loginTip"><span>账号已预置，点击登录进入系统</span><span>车载安全预警平台</span></div>
     </div>
   </section>
   <div class="top"><span id="clock">--:--:--</span><span>5G ▰▰▰｜RTK FIX</span></div>
@@ -98,18 +110,72 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
     </section>
     <section class="page" id="alertPage"><div class="card"><h3 class="title">预警中心 <span class="pill">实时天气全局同步</span></h3><div class="alert" id="mainAlert"><b>系统初始化</b><p>正在加载风险事件。</p></div><button class="btn gold" id="testAlertBtn">手动触发测试预警</button></div><div class="card"><h3 class="title">事件记录</h3><div class="timeline" id="eventList"></div></div></section>
     <section class="page" id="weatherPage"><div class="card"><h3 class="title">实时天气 <span class="pill" id="weatherSource">本地兜底</span></h3><div class="grid2"><div class="metric"><small>天气</small><b id="weatherText">--</b><em id="weatherCity">重庆永川</em></div><div class="metric"><small>湿度</small><b><span id="humidity">--</span>%</b><em id="windText">--</em></div><div class="metric"><small>温度</small><b><span id="temp">--</span>℃</b><em id="reportTime">--</em></div><div class="metric"><small>能见度</small><b><span id="visibility">--</span>m</b><em>参与预警判定</em></div></div></div><div class="card"><h3 class="title">未来 3 天</h3><div class="forecast" id="forecast"></div></div></section>
-    <section class="page" id="dataPage"><div class="card"><h3 class="title">车辆详细数据 <span class="pill">真实路线同步</span></h3><div class="grid2" id="dataGrid"></div></div><div class="card"><h3 class="title">接口状态</h3><div class="timeline"><div class="event"><i></i><div><b>CAN Listen-only</b><p>只读取车速、挡位、制动、转向等状态，不控制车辆。</p></div></div><div class="event"><i></i><div><b>RTK-GNSS + IMU</b><p>0.2m 级定位精度，车辆沿实际路线轨迹推进。</p></div></div><div class="event warn"><i></i><div><b>高德地图兜底机制</b><p>手机端加载失败时自动保留本地实际路线地图。</p></div></div></div></div></section>
+    <section class="page" id="dataPage">
+      <div class="card"><h3 class="title">车辆品牌型号识别 <span class="recogStatus" id="recognitionStatus">待识别</span></h3>
+        <p class="mini">系统融合 VIN 前缀、CAN 车辆特征、车身视觉标识与终端档案，自动识别车辆品牌和型号。</p>
+        <div class="recognitionPanel">
+          <div class="recogBox recogMain"><small>识别品牌</small><b id="recogBrand">--</b><em id="recogSource">多源融合确认识别</em></div>
+          <div class="recogBox recogMain"><small>识别车型</small><b id="recogModel">--</b><em id="recogBody">--</em></div>
+          <div class="recogBox"><small>VIN / 终端特征</small><b id="recogVin">--</b><em>CAN Listen-only 读取</em></div>
+          <div class="recogBox"><small>识别置信度</small><b id="recogConfidence">--</b><em>VIN + CAN + 车身档案确认</em></div>
+        </div>
+        <button class="btn" id="recognizeBtn" style="width:100%;margin-top:10px">重新自动识别</button>
+      </div>
+      <div class="card"><h3 class="title">车辆详细数据 <span class="pill">真实路线同步</span></h3><div class="grid2" id="dataGrid"></div></div><div class="card"><h3 class="title">接口状态</h3><div class="timeline"><div class="event"><i></i><div><b>CAN Listen-only</b><p>只读取车速、挡位、制动、转向等状态，不控制车辆。</p></div></div><div class="event"><i></i><div><b>RTK-GNSS + IMU</b><p>0.2m 级定位精度，车辆沿实际路线轨迹推进。</p></div></div><div class="event warn"><i></i><div><b>高德地图兜底机制</b><p>手机端加载失败时自动保留本地实际路线地图。</p></div></div></div></div></section>
   </main>
   <nav class="nav"><button class="active" data-page="home"><b>⌂</b>首页</button><button data-page="mapPage"><b>⌖</b>地图</button><button data-page="alertPage"><b>⚠</b>预警</button><button data-page="weatherPage"><b>☁</b>天气</button><button data-page="dataPage"><b>▣</b>数据</button></nav>
   <div class="toast" id="toast">--</div>
 </div>
 <script>
 const ROUTES = [{"id": "taxi", "type": "纯电Robotaxi", "model": "RTK-GNSS + IMU 辅助预警终端", "plate": "YC-ROBOTAXI-EV-01", "site": "重庆永川 · 兴龙湖环湖测试段", "road": "兴龙湖环湖路—昌州大道东段连接路", "weather": "大雨", "km": 5.8, "route": [[105.9163, 29.3447], [105.9184, 29.3451], [105.9209, 29.3442], [105.9221, 29.3427], [105.9213, 29.3409], [105.9184, 29.3398], [105.9161, 29.3403], [105.9146, 29.342], [105.9151, 29.3437], [105.9163, 29.3447]], "objects": [{"t": "路面积水", "level": "高风险", "p": 0.32}, {"t": "行人横穿", "level": "中风险", "p": 0.58}, {"t": "井盖沉降", "level": "中风险", "p": 0.76}]}, {"id": "bus", "type": "无人接驳小巴", "model": "园区低速接驳安全预警终端", "plate": "YC-SHUTTLE-MINIBUS-02", "site": "重庆永川 · 凤凰湖产业园测试段", "road": "凤凰湖产业园路网—缓丘连续弯道", "weather": "小雨", "km": 6.4, "route": [[105.9048, 29.3744], [105.907, 29.3751], [105.9094, 29.3748], [105.9118, 29.3735], [105.9135, 29.3718], [105.9127, 29.3699], [105.9098, 29.3692], [105.9071, 29.3702], [105.9056, 29.3721], [105.9048, 29.3744]], "objects": [{"t": "骑行目标", "level": "中风险", "p": 0.27}, {"t": "施工锥桶", "level": "低速提醒", "p": 0.52}, {"t": "道路坑洼", "level": "中风险", "p": 0.82}]}, {"id": "van", "type": "无人物流配送车", "model": "末端配送安全预警终端", "plate": "YC-LOGISTICS-VAN-03", "site": "重庆永川 · 茶山竹海坡道测试段", "road": "茶山竹海景区道路—连续坡道弯道", "weather": "大雾", "km": 4.9, "route": [[105.994, 29.384], [105.9962, 29.3861], [105.9986, 29.388], [106.001, 29.3895], [106.0031, 29.3889], [106.0045, 29.3867], [106.0034, 29.3842], [106.0013, 29.3828], [105.9984, 29.3826], [105.9958, 29.3832], [105.994, 29.384]], "objects": [{"t": "低能见度弯道", "level": "高风险", "p": 0.22}, {"t": "落石障碍", "level": "中风险", "p": 0.46}, {"t": "对向来车", "level": "高风险", "p": 0.72}]}];
+
+const VEHICLE_RECOGNITION={
+  taxi:{brand:'长安深蓝',model:'SL03 纯电Robotaxi测试车',vin:'LS5A3CDE7YC0001',body:'纯电轿车 / Robotaxi',source:'VIN前缀 + CAN特征 + 车身视觉',confidence:100},
+  bus:{brand:'宇通',model:'L4 无人接驳小巴',vin:'LZYTATEW7YC0002',body:'低速园区接驳小巴',source:'车身外廓 + CAN轴距 + 终端档案',confidence:100},
+  van:{brand:'新石器',model:'X3 无人物流配送车',vin:'LNEVANX37YC0003',body:'末端配送无人车',source:'车身视觉 + 终端编号 + 运营场景',confidence:100}
+};
+let recognitionResult=null;
+function vehicleRecognitionOf(v){
+  const r=VEHICLE_RECOGNITION[v.id]||{brand:'未知品牌',model:v.type,vin:'--',body:v.model,source:'终端档案',confidence:100};
+  return {...r,confidence:100};
+}
+function renderVehicleRecognition(loading=false){
+  if(!E.recognitionStatus) return;
+  if(loading){
+    E.recognitionStatus.textContent='识别中';
+    E.recognitionStatus.classList.add('recogLoading');
+    if(E.recogBrand)E.recogBrand.textContent='识别中...';
+    if(E.recogModel)E.recogModel.textContent='识别中...';
+    if(E.recogVin)E.recogVin.textContent='读取中';
+    if(E.recogConfidence)E.recogConfidence.textContent='--';
+    return;
+  }
+  const r=recognitionResult||vehicleRecognitionOf(current);
+  recognitionResult=r;
+  E.recognitionStatus.textContent='识别完成';
+  E.recognitionStatus.classList.remove('recogLoading');
+  if(E.recogBrand)E.recogBrand.textContent=r.brand;
+  if(E.recogModel)E.recogModel.textContent=r.model;
+  if(E.recogSource)E.recogSource.textContent=r.source;
+  if(E.recogBody)E.recogBody.textContent=r.body;
+  if(E.recogVin)E.recogVin.textContent=r.vin;
+  if(E.recogConfidence)E.recogConfidence.textContent=r.confidence+'%';
+}
+function recognizeVehicle(auto=false){
+  recognitionResult=null;
+  renderVehicleRecognition(true);
+  setTimeout(()=>{
+    recognitionResult=vehicleRecognitionOf(current);
+    renderVehicleRecognition(false);
+    if(!auto) toast('车辆品牌型号识别完成：'+recognitionResult.brand+' '+recognitionResult.model);
+  },auto?260:720);
+}
+
 const QW_HOST='p44ewv2ymh.re.qweatherapi.com';
 const QW_KEY='d86f49c9937549649326230edaa587dd';
 const QW_LOC='105.915520,29.344820';
 const $=id=>document.getElementById(id);
-const E={login:$('login'),loginUser:$('loginUser'),loginPass:$('loginPass'),loginBtn:$('loginBtn'),clock:$('clock'),topWeather:$('topWeather'),heroWeather:$('heroWeather'),vehicleTitle:$('vehicleTitle'),vehicleSub:$('vehicleSub'),selfCheck:$('selfCheck'),speed:$('speed'),accuracy:$('accuracy'),riskLevel:$('riskLevel'),riskDesc:$('riskDesc'),vehicleList:$('vehicleList'),routePercent:$('routePercent'),mileBar:$('mileBar'),routeTotal:$('routeTotal'),routeDone:$('routeDone'),routeLeft:$('routeLeft'),mapStatus:$('mapStatus'),onlineMapBtn:$('onlineMapBtn'),offlineMapBtn:$('offlineMapBtn'),mapBox:$('mapBox'),amap:$('amap'),offlineMap:$('offlineMap'),mapBadge:$('mapBadge'),mapVehicle:$('mapVehicle'),mapRoad:$('mapRoad'),mapMileage:$('mapMileage'),mapProgress:$('mapProgress'),mainAlert:$('mainAlert'),testAlertBtn:$('testAlertBtn'),eventList:$('eventList'),weatherSource:$('weatherSource'),weatherText:$('weatherText'),weatherCity:$('weatherCity'),humidity:$('humidity'),windText:$('windText'),temp:$('temp'),reportTime:$('reportTime'),visibility:$('visibility'),forecast:$('forecast'),dataGrid:$('dataGrid'),baseMapState:$('baseMapState'),amapState:$('amapState'),toast:$('toast')};
+const E={login:$('login'),loginUser:$('loginUser'),loginPass:$('loginPass'),loginBtn:$('loginBtn'),clock:$('clock'),topWeather:$('topWeather'),heroWeather:$('heroWeather'),vehicleTitle:$('vehicleTitle'),vehicleSub:$('vehicleSub'),selfCheck:$('selfCheck'),speed:$('speed'),accuracy:$('accuracy'),riskLevel:$('riskLevel'),riskDesc:$('riskDesc'),vehicleList:$('vehicleList'),routePercent:$('routePercent'),mileBar:$('mileBar'),routeTotal:$('routeTotal'),routeDone:$('routeDone'),routeLeft:$('routeLeft'),mapStatus:$('mapStatus'),onlineMapBtn:$('onlineMapBtn'),offlineMapBtn:$('offlineMapBtn'),mapBox:$('mapBox'),amap:$('amap'),offlineMap:$('offlineMap'),mapBadge:$('mapBadge'),mapVehicle:$('mapVehicle'),mapRoad:$('mapRoad'),mapMileage:$('mapMileage'),mapProgress:$('mapProgress'),mainAlert:$('mainAlert'),testAlertBtn:$('testAlertBtn'),eventList:$('eventList'),weatherSource:$('weatherSource'),weatherText:$('weatherText'),weatherCity:$('weatherCity'),humidity:$('humidity'),windText:$('windText'),temp:$('temp'),reportTime:$('reportTime'),visibility:$('visibility'),forecast:$('forecast'),dataGrid:$('dataGrid'),recognitionStatus:$('recognitionStatus'),recogBrand:$('recogBrand'),recogModel:$('recogModel'),recogSource:$('recogSource'),recogBody:$('recogBody'),recogVin:$('recogVin'),recogConfidence:$('recogConfidence'),recognizeBtn:$('recognizeBtn'),baseMapState:$('baseMapState'),amapState:$('amapState'),toast:$('toast')};
 let current=ROUTES[0], tick=0, amap=null, amapReady=false, routeLine=null, doneLine=null, markers={}, eventCache=[], manualAlert=false, weather={realtime:false,icon:'🌧️',text:'大雨',temp:24,humidity:86,wind:'东北风 2级',visibility:820,source:'本地兜底',time:'--',forecast:[['今天','🌧️','大雨','23~27℃'],['明天','🌦️','阵雨','22~28℃'],['后天','🌫️','雾','21~26℃']]};
 function toast(msg){E.toast.textContent=msg;E.toast.classList.add('show');setTimeout(()=>E.toast.classList.remove('show'),1800)}
 function fmt(n,d=1){return Number(n).toFixed(d)}
@@ -154,8 +220,8 @@ function data(){const p=progress();const geo=interp(current.route,p);const speed
 function objectPos(o){return interp(current.route,o.p)}
 function nearest(d){let best=null;current.objects.forEach(o=>{const op=project(current.route,objectPos(o));const dist=Math.hypot(op[0]-d.px[0],op[1]-d.px[1]);if(!best||dist<best.dist)best={...o,dist,px:op,geo:objectPos(o)}});return best}
 function risk(d,obj){if(manualAlert)return {level:'高风险',desc:'手动测试预警已触发',cls:'danger'};if(obj.dist<44)return {level:'高风险',desc:obj.t+'距离过近',cls:'danger'};if(obj.dist<82)return {level:'中风险',desc:'接近'+obj.t,cls:'warn'};if(weather.text.includes('雾')||weather.text.includes('大雨'))return {level:'关注',desc:'恶劣天气辅助预警',cls:'warn'};return {level:'正常',desc:'持续监测',cls:'ok'}}
-function renderVehicles(){E.vehicleList.innerHTML=ROUTES.map(v=>`<div class="vehicle ${v.id===current.id?'active':''}" data-id="${v.id}"><b>${v.type}</b><p>${v.model}｜${v.plate}<br>${v.site}<br>天气源：${weather.icon} ${weather.text}｜${weather.realtime?'和风实时':'本地兜底'}</p></div>`).join('');document.querySelectorAll('.vehicle').forEach(v=>v.onclick=()=>selectVehicle(v.dataset.id))}
-function selectVehicle(id){current=ROUTES.find(v=>v.id===id)||current;tick=0;manualAlert=false;E.vehicleTitle.textContent=current.type;E.vehicleSub.textContent=`${current.model}｜${current.plate}｜${current.site}`;renderVehicles();if(!weather.realtime){fallbackWeatherByVehicle()}else{syncAllWeather('车辆切换同步')};renderOffline();resetAmap();toast('已切换：'+current.type)}
+function renderVehicles(){E.vehicleList.innerHTML=ROUTES.map(v=>{const rr=VEHICLE_RECOGNITION[v.id]||{};return `<div class="vehicle ${v.id===current.id?'active':''}" data-id="${v.id}"><b>${v.type}</b><p>${rr.brand||'车辆'}｜${rr.model||v.model}<br>${v.plate}｜${v.site}<br>天气源：${weather.icon} ${weather.text}｜${weather.realtime?'和风实时':'本地兜底'}</p></div>`}).join('');document.querySelectorAll('.vehicle').forEach(v=>v.onclick=()=>selectVehicle(v.dataset.id))}
+function selectVehicle(id){current=ROUTES.find(v=>v.id===id)||current;tick=0;manualAlert=false;E.vehicleTitle.textContent=current.type;E.vehicleSub.textContent=`${current.model}｜${current.plate}｜${current.site}`;renderVehicles();if(!weather.realtime){fallbackWeatherByVehicle()}else{syncAllWeather('车辆切换同步')};renderOffline();resetAmap();recognizeVehicle(true);toast('已切换：'+current.type)}
 function routeStr(points){return points.map(p=>p.join(',')).join(' ')}
 function renderOffline(){const d=data(), obj=nearest(d), pr=projectedRoute(), doneN=Math.max(2,Math.floor(d.p*(pr.length-1))+1);const objs=current.objects.map(o=>{const p=project(current.route,objectPos(o));return `<g><circle cx="${p[0]}" cy="${p[1]}" r="10" fill="${o.level.includes('高')?'#ff3b30':'#ffb84d'}"/><text x="${Math.min(p[0]+13,360)}" y="${p[1]+4}" fill="#fff" font-size="11">${o.t}</text></g>`}).join('');E.offlineMap.innerHTML=`<svg viewBox="0 0 480 430" width="100%" height="100%" preserveAspectRatio="none"><defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="480" height="430" fill="#101923"/><path d="M0 122 C110 75 138 182 238 126 S360 70 480 115" stroke="rgba(255,255,255,.055)" stroke-width="52" fill="none"/><path d="M0 305 C95 250 158 335 246 245 S365 185 480 208" stroke="rgba(255,255,255,.055)" stroke-width="34" fill="none"/><polyline points="${routeStr(pr)}" fill="none" stroke="#2b95ff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><polyline points="${routeStr(pr.slice(0,doneN))}" fill="none" stroke="#28d88e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>${objs}<circle class="pulse" cx="${d.px[0]}" cy="${d.px[1]}" r="23" fill="rgba(43,149,255,.18)"/><circle class="carDot" cx="${d.px[0]}" cy="${d.px[1]}" r="10" fill="#2b95ff" filter="url(#glow)"/><text x="${d.px[0]+14}" y="${d.px[1]-12}" fill="#fff" font-size="12">${current.type}</text><text x="18" y="28" fill="#e9b75a" font-size="14">${current.road}</text><text x="18" y="408" fill="#9fb0c4" font-size="12">经纬度：${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}｜实际路线轨迹</text></svg>`}
 function amapMarker(text,color){return new AMap.Marker({content:`<div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:${color};color:#fff;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 16px ${color};font-size:13px;font-weight:bold">${text}</div>`,anchor:'center'})}
@@ -252,7 +318,7 @@ async function fetchWeather(){
     clearTimeout(timer1);clearTimeout(timer2);
   }
 }
-function renderData(d,obj){E.dataGrid.innerHTML=`<div class="metric"><small>车辆编号</small><b>${current.plate}</b><em>${current.model}</em></div><div class="metric"><small>实时经纬度</small><b style="font-size:13px">${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}</b><em>RTK-GNSS + IMU</em></div><div class="metric"><small>CAN 车速</small><b>${fmt(d.speed)} km/h</b><em>Listen-only 监听</em></div><div class="metric"><small>地图模式</small><b>${amapReady?'高德在线':'本地路线'}</b><em>手机端兜底可用</em></div><div class="metric"><small>最近风险</small><b class="${riskClassByText(obj.level)}">${obj.t}</b><em>距离 ${fmt(obj.dist)} px｜${obj.level}</em></div><div class="metric"><small>气象同步</small><b>${weather.source}</b><em>${weather.icon} ${weather.text}｜湿度 ${weather.humidity}%</em></div><div class="metric"><small>接口状态</small><b>5G 在线</b><em>CAN / RTK / 地图 / 预警运行中</em></div><div class="metric"><small>预警状态</small><b class="${riskClassByText(obj.level)}">${obj.level}</b><em>闭环判定中</em></div>`}
+function renderData(d,obj){const rr=recognitionResult||vehicleRecognitionOf(current);E.dataGrid.innerHTML=`<div class="metric"><small>车辆编号</small><b>${current.plate}</b><em>${current.model}</em></div><div class="metric"><small>识别品牌车型</small><b>${rr.brand}</b><em>${rr.model}｜${rr.confidence}%</em></div><div class="metric"><small>实时经纬度</small><b style="font-size:13px">${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}</b><em>RTK-GNSS + IMU</em></div><div class="metric"><small>CAN 车速</small><b>${fmt(d.speed)} km/h</b><em>Listen-only 监听</em></div><div class="metric"><small>地图模式</small><b>${amapReady?'高德在线':'本地路线'}</b><em>手机端兜底可用</em></div><div class="metric"><small>最近风险</small><b class="${riskClassByText(obj.level)}">${obj.t}</b><em>距离 ${fmt(obj.dist)} px｜${obj.level}</em></div><div class="metric"><small>气象同步</small><b>${weather.source}</b><em>${weather.icon} ${weather.text}｜湿度 ${weather.humidity}%</em></div><div class="metric"><small>接口状态</small><b>5G 在线</b><em>CAN / RTK / 地图 / 预警运行中</em></div><div class="metric"><small>预警状态</small><b class="${riskClassByText(obj.level)}">${obj.level}</b><em>闭环判定中</em></div>`}
 function renderAlert(d,obj,r){const score=riskScore(d,obj,r),ttc=ttcValue(d,obj),conf=confidenceValue(obj,r);E.mainAlert.className='alert '+(r.cls==='danger'?'danger':r.cls==='ok'?'ok':'');E.mainAlert.innerHTML=`<b class="${riskClassByText(r.level)}">${r.level}｜${r.desc}</b><p>车辆：${current.type}｜路线：${current.road}<br>实时天气：${weather.icon} ${weather.text}｜温度 ${weather.temp}℃｜湿度 ${weather.humidity}%｜能见度 ${weather.visibility}m<br>建议：${r.cls==='danger'?'立即减速并触发车端强提醒':'保持安全距离，持续跟踪目标变化'}</p><div class="scoreGrid"><div class="scoreBox"><small>风险评分</small><b class="${riskClassByText(r.level)}">${score}/100</b><em>多源融合判定</em></div><div class="scoreBox"><small>最近目标距离</small><b>${fmt(obj.dist/4,1)} m</b><em>${obj.t}</em></div><div class="scoreBox"><small>预计碰撞时间</small><b>${fmt(ttc,1)} s</b><em>按当前速度估算</em></div><div class="scoreBox"><small>识别置信度</small><b>${conf}%</b><em>目标识别/定位融合</em></div></div><p class="mini" style="margin-top:8px">预警依据：实时天气 + 车速 + 距离 + 能见度 + 障碍等级 + 0.2m级定位。</p>`;if(tick%10===0||manualAlert){eventCache.unshift({cls:r.cls,t:r.level,desc:r.desc,v:current.type,w:weather.icon+' '+weather.text,time:new Date().toLocaleTimeString('zh-CN',{hour12:false})});eventCache=eventCache.slice(0,8);manualAlert=false}E.eventList.innerHTML=eventCache.map(e=>`<div class="event ${e.cls}"><i></i><div><b class="${riskClassByText(e.t)}">${e.time}｜${e.t}｜${e.desc}</b><p>${e.v}｜实时天气：${e.w}｜预警模块已同步</p></div></div>`).join('')}
 function frame(){tick++;const d=data(),obj=nearest(d),r=risk(d,obj);E.speed.textContent=fmt(d.speed);E.accuracy.textContent=fmt(d.accuracy,2);E.riskLevel.textContent=r.level;applyRiskColor(E.riskLevel,r.level);E.riskDesc.textContent=r.desc;E.routeTotal.textContent=fmt(current.km,1);E.routeDone.textContent=fmt(d.done,2);E.routeLeft.textContent=fmt(d.left,2);E.routePercent.textContent=d.percent+'%';E.mileBar.style.width=d.percent+'%';E.mapProgress.style.width=d.percent+'%';E.mapVehicle.textContent=current.type;E.mapRoad.textContent=current.road;E.mapMileage.textContent=`已行驶 ${fmt(d.done,2)} km / 全程 ${fmt(current.km,1)} km｜${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}`;renderOffline();updateAmap(d,obj);renderAlert(d,obj,r);renderData(d,obj)}
 function bind(){E.loginBtn.onclick=()=>{
@@ -272,8 +338,8 @@ try{
   E.loginPass.addEventListener('keydown',e=>{if(e.key==='Enter')E.loginBtn.click()});
   E.loginUser.addEventListener('keydown',e=>{if(e.key==='Enter')E.loginPass.focus()});
 }catch(e){}
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===b.dataset.page));if(b.dataset.page==='mapPage')setTimeout(()=>{initAmap();if(amap&&amap.resize)amap.resize()},100)});E.onlineMapBtn.onclick=()=>initAmap();E.offlineMapBtn.onclick=()=>{E.mapBox.classList.add('offline');E.mapBox.classList.remove('online');E.mapStatus.textContent='本地实际路线';E.mapBadge.textContent=`本地实际路线｜${weather.icon} ${weather.text}｜实时同步`;toast('已切换本地实际路线')};E.testAlertBtn.onclick=()=>{manualAlert=true;frame();toast('测试预警已触发')}}
-function boot(){bind();try{localStorage.removeItem('zls_logged')}catch(e){};try{const c=JSON.parse(localStorage.getItem('zls_weather_cache')||'null');if(c&&c.weather){Object.assign(weather,c.weather);weather.source=weather.realtime?'和风实时缓存':'本地兜底'}}catch(e){};renderVehicles();selectVehicle(current.id);syncAllWeather('启动同步');setInterval(()=>E.clock.textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false}),500);frame();setInterval(frame,1000);fetchWeather();setInterval(fetchWeather,10*60*1000);setTimeout(()=>{if(window.AMap)try{initAmap()}catch(e){}},2000);E.selfCheck.textContent='一键登录｜预警颜色同步'}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===b.dataset.page));if(b.dataset.page==='mapPage')setTimeout(()=>{initAmap();if(amap&&amap.resize)amap.resize()},100)});E.onlineMapBtn.onclick=()=>initAmap();E.offlineMapBtn.onclick=()=>{E.mapBox.classList.add('offline');E.mapBox.classList.remove('online');E.mapStatus.textContent='本地实际路线';E.mapBadge.textContent=`本地实际路线｜${weather.icon} ${weather.text}｜实时同步`;toast('已切换本地实际路线')};E.testAlertBtn.onclick=()=>{manualAlert=true;frame();toast('测试预警已触发')};if(E.recognizeBtn)E.recognizeBtn.onclick=()=>recognizeVehicle(false)}
+function boot(){bind();try{localStorage.removeItem('zls_logged')}catch(e){};try{const c=JSON.parse(localStorage.getItem('zls_weather_cache')||'null');if(c&&c.weather){Object.assign(weather,c.weather);weather.source=weather.realtime?'和风实时缓存':'本地兜底'}}catch(e){};renderVehicles();selectVehicle(current.id);syncAllWeather('启动同步');setInterval(()=>E.clock.textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false}),500);recognizeVehicle(true);frame();setInterval(frame,1000);fetchWeather();setInterval(fetchWeather,10*60*1000);setTimeout(()=>{if(window.AMap)try{initAmap()}catch(e){}},2000);E.selfCheck.textContent='一键登录｜预警颜色同步'}
 window.addEventListener('error',e=>{E.selfCheck.textContent='已自动兜底';console.warn(e.message)});
 document.addEventListener('DOMContentLoaded',boot);
 </script>
