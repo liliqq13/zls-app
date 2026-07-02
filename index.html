@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>智路哨兵｜产品感增强预览版</title>
+<title>智路哨兵｜手机端地图修复版</title>
 <meta name="theme-color" content="#09111f">
 <script>
 window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b" };
@@ -34,6 +34,26 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
 .scoreBox em{display:block;margin-top:3px;font-size:10px;color:#91a0b2;font-style:normal}
 .weatherSyncTag{display:inline-block;margin-left:5px;padding:2px 6px;border-radius:999px;background:rgba(40,216,142,.14);color:#a8f4cd;font-size:10px}
 @media(max-width:390px){.systemLoop{grid-template-columns:repeat(2,1fr)}.scoreGrid{grid-template-columns:1fr 1fr}}
+
+
+/* 手机端地图修复：高德在线时不再叠加本地SVG，避免双路线、文字标签裁切 */
+.mapBox.online .offlineMap{display:none!important;opacity:0!important;pointer-events:none!important}
+.mapBox.online .amap{display:block!important;z-index:2}
+.mapBox.offline .offlineMap{display:block!important;opacity:1!important}
+.mapBox.offline .amap{display:none!important}
+.mapBox.online .mapBadge{background:rgba(0,0,0,.72)}
+@media(max-width:480px){
+  .mapBox{height:min(58vh,520px);min-height:430px;border-radius:18px}
+  .mapPanel{left:8px!important;right:8px!important;bottom:8px!important;padding:9px!important;border-radius:16px!important}
+  .mapPanel .row{gap:6px}
+  .mapPanel b{font-size:16px}
+  .mapPanel .pill{font-size:11px;padding:5px 8px;white-space:normal}
+  .mapBadge{left:8px;top:8px;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mapStateBox{grid-template-columns:1fr 1fr;gap:7px}
+  .stateChip{padding:8px}
+  .stateChip b{font-size:11px}
+  .stateChip span{font-size:9px}
+}
 
 </style>
 </head>
@@ -70,7 +90,7 @@ window._AMapSecurityConfig = { securityJsCode: "be6524c034caa5a367be2b02c33a3f4b
       <div class="card"><h3 class="title">实际路线进度 <span class="pill" id="routePercent">0%</span></h3><div class="progress"><span id="mileBar"></span></div><div class="grid3" style="margin-top:10px"><div class="metric"><small>路线总长</small><b><span id="routeTotal">--</span></b><em>km</em></div><div class="metric"><small>已行驶</small><b><span id="routeDone">--</span></b><em>km</em></div><div class="metric"><small>剩余距离</small><b><span id="routeLeft">--</span></b><em>km</em></div></div></div>
     </section>
     <section class="page" id="mapPage">
-      <div class="card"><h3 class="title">实时地图 <span class="pill" id="mapStatus">本地实际路线</span></h3><p class="mini">手机端优先显示本地实际路线轨迹；高德在线底图加载慢或域名未授权时，不影响车辆沿路线实时行驶。</p><div class="btns"><button class="btn" id="onlineMapBtn">加载高德地图</button><button class="btn secondary" id="offlineMapBtn">使用本地地图</button></div><div class="mapStateBox">
+      <div class="card"><h3 class="title">实时地图 <span class="pill" id="mapStatus">本地实际路线</span></h3><p class="mini">手机端优先保证地图可用；高德底图加载成功后只显示真实在线地图和车辆轨迹，加载慢或域名未授权时自动回退本地实际路线。</p><div class="btns"><button class="btn" id="onlineMapBtn">加载高德地图</button><button class="btn secondary" id="offlineMapBtn">使用本地地图</button></div><div class="mapStateBox">
         <div class="stateChip"><b id="baseMapState">本地实际路线已加载</b><span>手机端默认可用</span></div>
         <div class="stateChip"><b id="amapState">高德底图待加载</b><span>点击按钮后加载</span></div>
       </div></div>
@@ -137,11 +157,11 @@ function risk(d,obj){if(manualAlert)return {level:'高风险',desc:'手动测试
 function renderVehicles(){E.vehicleList.innerHTML=ROUTES.map(v=>`<div class="vehicle ${v.id===current.id?'active':''}" data-id="${v.id}"><b>${v.type}</b><p>${v.model}｜${v.plate}<br>${v.site}<br>天气源：${weather.icon} ${weather.text}｜${weather.realtime?'和风实时':'本地兜底'}</p></div>`).join('');document.querySelectorAll('.vehicle').forEach(v=>v.onclick=()=>selectVehicle(v.dataset.id))}
 function selectVehicle(id){current=ROUTES.find(v=>v.id===id)||current;tick=0;manualAlert=false;E.vehicleTitle.textContent=current.type;E.vehicleSub.textContent=`${current.model}｜${current.plate}｜${current.site}`;renderVehicles();if(!weather.realtime){fallbackWeatherByVehicle()}else{syncAllWeather('车辆切换同步')};renderOffline();resetAmap();toast('已切换：'+current.type)}
 function routeStr(points){return points.map(p=>p.join(',')).join(' ')}
-function renderOffline(){const d=data(), obj=nearest(d), pr=projectedRoute(), doneN=Math.max(2,Math.floor(d.p*(pr.length-1))+1);const objs=current.objects.map(o=>{const p=project(current.route,objectPos(o));return `<g><circle cx="${p[0]}" cy="${p[1]}" r="10" fill="${o.level.includes('高')?'#ff3b30':'#ffb84d'}"/><text x="${p[0]+13}" y="${p[1]+4}" fill="#fff" font-size="11">${o.t}</text></g>`}).join('');E.offlineMap.innerHTML=`<svg viewBox="0 0 480 430" width="100%" height="100%" preserveAspectRatio="none"><defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="480" height="430" fill="#101923"/><path d="M0 122 C110 75 138 182 238 126 S360 70 480 115" stroke="rgba(255,255,255,.055)" stroke-width="52" fill="none"/><path d="M0 305 C95 250 158 335 246 245 S365 185 480 208" stroke="rgba(255,255,255,.055)" stroke-width="34" fill="none"/><polyline points="${routeStr(pr)}" fill="none" stroke="#2b95ff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><polyline points="${routeStr(pr.slice(0,doneN))}" fill="none" stroke="#28d88e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>${objs}<circle class="pulse" cx="${d.px[0]}" cy="${d.px[1]}" r="23" fill="rgba(43,149,255,.18)"/><circle class="carDot" cx="${d.px[0]}" cy="${d.px[1]}" r="10" fill="#2b95ff" filter="url(#glow)"/><text x="${d.px[0]+14}" y="${d.px[1]-12}" fill="#fff" font-size="12">${current.type}</text><text x="18" y="28" fill="#e9b75a" font-size="14">${current.road}</text><text x="18" y="408" fill="#9fb0c4" font-size="12">经纬度：${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}｜实际路线轨迹</text></svg>`}
+function renderOffline(){const d=data(), obj=nearest(d), pr=projectedRoute(), doneN=Math.max(2,Math.floor(d.p*(pr.length-1))+1);const objs=current.objects.map(o=>{const p=project(current.route,objectPos(o));return `<g><circle cx="${p[0]}" cy="${p[1]}" r="10" fill="${o.level.includes('高')?'#ff3b30':'#ffb84d'}"/><text x="${Math.min(p[0]+13,360)}" y="${p[1]+4}" fill="#fff" font-size="11">${o.t}</text></g>`}).join('');E.offlineMap.innerHTML=`<svg viewBox="0 0 480 430" width="100%" height="100%" preserveAspectRatio="none"><defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="480" height="430" fill="#101923"/><path d="M0 122 C110 75 138 182 238 126 S360 70 480 115" stroke="rgba(255,255,255,.055)" stroke-width="52" fill="none"/><path d="M0 305 C95 250 158 335 246 245 S365 185 480 208" stroke="rgba(255,255,255,.055)" stroke-width="34" fill="none"/><polyline points="${routeStr(pr)}" fill="none" stroke="#2b95ff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><polyline points="${routeStr(pr.slice(0,doneN))}" fill="none" stroke="#28d88e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>${objs}<circle class="pulse" cx="${d.px[0]}" cy="${d.px[1]}" r="23" fill="rgba(43,149,255,.18)"/><circle class="carDot" cx="${d.px[0]}" cy="${d.px[1]}" r="10" fill="#2b95ff" filter="url(#glow)"/><text x="${d.px[0]+14}" y="${d.px[1]-12}" fill="#fff" font-size="12">${current.type}</text><text x="18" y="28" fill="#e9b75a" font-size="14">${current.road}</text><text x="18" y="408" fill="#9fb0c4" font-size="12">经纬度：${d.geo[0].toFixed(5)}, ${d.geo[1].toFixed(5)}｜实际路线轨迹</text></svg>`}
 function amapMarker(text,color){return new AMap.Marker({content:`<div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:${color};color:#fff;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 16px ${color};font-size:13px;font-weight:bold">${text}</div>`,anchor:'center'})}
-function initAmap(){if(amapReady)return true;if(!window.AMap){E.mapStatus.textContent='高德加载中';if(E.amapState)E.amapState.textContent='高德底图加载中';toast('高德资源加载中，手机端已保留本地地图');return false}try{E.mapBox.classList.remove('offline');E.mapBox.classList.add('online');amap=new AMap.Map('amap',{viewMode:'2D',zoom:15,center:current.route[0],resizeEnable:true,showLabel:false,animateEnable:false,features:['bg','road'],mapStyle:'amap://styles/normal'});if(AMap.Scale)amap.addControl(new AMap.Scale());markers.car=amapMarker('车','#2b95ff');markers.obj=amapMarker('险','#ffb84d');amap.add([markers.car,markers.obj]);amapReady=true;E.mapStatus.textContent='高德在线';if(E.amapState)E.amapState.textContent='高德底图已加载';E.mapBadge.textContent=`高德在线地图｜${weather.icon} ${weather.text}｜实时同步`;resetAmap();toast('高德在线地图已加载');return true}catch(e){E.mapStatus.textContent='本地路线';if(E.amapState)E.amapState.textContent='高德底图失败，已启用本地路线';toast('手机端高德未加载，已启用本地实际路线');return false}}
-function resetAmap(){if(!amapReady||!amap)return;try{if(routeLine)amap.remove(routeLine);if(doneLine)amap.remove(doneLine);routeLine=new AMap.Polyline({path:current.route,strokeColor:'#2b95ff',strokeWeight:7,strokeOpacity:.88,showDir:true});doneLine=new AMap.Polyline({path:[current.route[0]],strokeColor:'#28d88e',strokeWeight:8,strokeOpacity:.95});amap.add([routeLine,doneLine]);amap.setFitView([routeLine],false,[80,24,128,24]);}catch(e){}}
-function updateAmap(d,obj){if(!amapReady||!amap)return;try{markers.car.setPosition(d.geo);markers.obj.setPosition(obj.geo);doneLine.setPath(current.route.slice(0,Math.max(2,Math.floor(d.p*(current.route.length-1))+1)));if(tick%7===0)amap.setCenter(d.geo)}catch(e){}}
+function initAmap(){if(amapReady)return true;if(!window.AMap){E.mapStatus.textContent='高德加载中';if(E.amapState)E.amapState.textContent='高德底图加载中';toast('高德资源加载中，手机端已保留本地地图');return false}try{E.mapBox.classList.remove('offline');E.mapBox.classList.add('online');amap=new AMap.Map('amap',{viewMode:'2D',zoom:15,center:current.route[0],resizeEnable:true,showLabel:false,animateEnable:false,features:['bg','road'],mapStyle:'amap://styles/normal'});if(AMap.Scale)amap.addControl(new AMap.Scale());markers.car=amapMarker('车','#2b95ff');markers.obj=amapMarker('险','#ffb84d');amap.add([markers.car,markers.obj]);amapReady=true;E.mapStatus.textContent='高德在线';if(E.amapState)E.amapState.textContent='高德底图已加载';E.mapBadge.textContent=`高德在线地图｜${weather.icon} ${weather.text}｜实时同步`;resetAmap();setTimeout(()=>{try{amap.resize();amap.setFitView([routeLine],false,[70,24,148,24])}catch(e){}},180);toast('高德在线地图已加载');return true}catch(e){E.mapStatus.textContent='本地路线';if(E.amapState)E.amapState.textContent='高德底图失败，已启用本地路线';toast('手机端高德未加载，已启用本地实际路线');return false}}
+function resetAmap(){if(!amapReady||!amap)return;try{if(routeLine)amap.remove(routeLine);if(doneLine)amap.remove(doneLine);routeLine=new AMap.Polyline({path:current.route,strokeColor:'#2b95ff',strokeWeight:7,strokeOpacity:.88,showDir:true});doneLine=new AMap.Polyline({path:[current.route[0]],strokeColor:'#28d88e',strokeWeight:8,strokeOpacity:.95});amap.add([routeLine,doneLine]);amap.setFitView([routeLine],false,[70,24,148,24]);}catch(e){}}
+function updateAmap(d,obj){if(!amapReady||!amap)return;try{markers.car.setPosition(d.geo);markers.obj.setPosition(obj.geo);const doneN=Math.max(1,Math.floor(d.p*(current.route.length-1))+1);const donePath=current.route.slice(0,doneN);donePath.push(d.geo);doneLine.setPath(donePath);if(tick%7===0)amap.setCenter(d.geo)}catch(e){}}
 function syncAllWeather(reason='同步'){
   const tag=weather.realtime?'和风实时':'本地兜底';
   weather.source=weather.realtime?'和风实时':'本地兜底';
