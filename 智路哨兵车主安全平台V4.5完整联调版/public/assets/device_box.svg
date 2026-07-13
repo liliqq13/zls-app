@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 480">
+<defs>
+ <linearGradient id="case" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#4d5966"/><stop offset=".5" stop-color="#171e27"/><stop offset="1" stop-color="#080c12"/></linearGradient>
+ <linearGradient id="edge" x1="0" x2="1"><stop stop-color="#f0d085"/><stop offset="1" stop-color="#9f6f25"/></linearGradient>
+ <filter id="s"><feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#000" flood-opacity=".42"/></filter>
+</defs>
+<ellipse cx="350" cy="411" rx="240" ry="30" fill="#000" opacity=".18"/>
+<g filter="url(#s)">
+ <path d="M116 126 482 78l103 75-25 199-368 54-99-78z" fill="url(#case)" stroke="#596674" stroke-width="5"/>
+ <path d="M116 126 482 78l103 75-365 56z" fill="#56616e" opacity=".55"/>
+ <path d="M220 209 585 153l-25 199-368 54z" fill="#0e141c" opacity=".74"/>
+ <path d="M191 216 560 161" stroke="url(#edge)" stroke-width="7"/>
+ <rect x="286" y="220" width="198" height="86" rx="16" fill="#121a24" stroke="#d1a853" stroke-width="4"/>
+ <text x="385" y="255" text-anchor="middle" fill="#fff" font-size="29" font-family="Arial" font-weight="700">智路哨兵</text>
+ <text x="385" y="281" text-anchor="middle" fill="#d7b564" font-size="16" font-family="Arial">ZLS-BOX-001</text>
+ <circle cx="250" cy="335" r="12" fill="#35c58b"/><circle cx="292" cy="329" r="10" fill="#397dff"/>
+ <rect x="440" y="324" width="80" height="24" rx="7" fill="#242f3b" stroke="#798693" stroke-width="2"/>
+</g>
+<path d="M535 244h82M528 276h100M520 309h84" stroke="#cfd6dd" stroke-width="9" stroke-linecap="round"/>
+</svg>

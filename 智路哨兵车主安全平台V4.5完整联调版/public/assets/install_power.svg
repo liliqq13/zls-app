@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#352c25"/><stop offset="1" stop-color="#080c12"/></linearGradient></defs>
+    <rect width="480" height="320" rx="24" fill="url(#bg)"/>
+    <path d="M25 246C115 193 169 210 235 154s126-77 220-43" fill="none" stroke="#ff9f43" stroke-width="4" opacity=".72"/>
+    <rect x="51" y="66" width="378" height="165" rx="24" fill="#101720" stroke="#697583" stroke-width="3"/>
+    <rect x="82" y="98" width="142" height="82" rx="15" fill="#212c37" stroke="#ff9f43" stroke-width="3"/>
+    <path d="M249 102h136M249 132h92M249 162h116" stroke="#788491" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="103" cy="260" r="8" fill="#ff9f43"/><text x="122" y="266" fill="#fff" font-size="24" font-family="Arial">车辆低压电源连接</text>
+    </svg>

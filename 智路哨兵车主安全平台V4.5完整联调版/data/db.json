@@ -1,0 +1,196 @@
+{
+  "workorders": [],
+  "reports": [],
+  "notifications": [
+    {
+      "id": "NTF-1783909976666",
+      "level": "success",
+      "title": "安全体检完成",
+      "message": "YC-ROBOTAXI-EV-01 安全体检得分 100 分",
+      "vehicleId": "taxi",
+      "createdAt": "2026-07-13T02:32:56.666Z",
+      "read": false
+    },
+    {
+      "id": "NTF-1783907461992",
+      "level": "success",
+      "title": "报告生成完成",
+      "message": "行程安全报告 已完成，可在运维页下载",
+      "vehicleId": "taxi",
+      "createdAt": "2026-07-13T01:51:01.992Z",
+      "read": false
+    },
+    {
+      "id": "NTF-1783907461989",
+      "level": "success",
+      "title": "安全体检完成",
+      "message": "YC-ROBOTAXI-EV-01 安全体检得分 100 分",
+      "vehicleId": "taxi",
+      "createdAt": "2026-07-13T01:51:01.989Z",
+      "read": false
+    },
+    {
+      "id": "NTF-001",
+      "level": "info",
+      "title": "设备上线",
+      "message": "三台智路哨兵设备已完成心跳连接。",
+      "vehicleId": "taxi",
+      "createdAt": "2026-07-13T00:00:00.000Z",
+      "read": false
+    },
+    {
+      "id": "NTF-002",
+      "level": "warn",
+      "title": "低能见度关注",
+      "message": "茶山竹海测试段能见度低于500m，请持续关注。",
+      "vehicleId": "van",
+      "createdAt": "2026-07-13T00:05:00.000Z",
+      "read": false
+    }
+  ],
+  "trips": [
+    {
+      "id": "TRIP-001",
+      "vehicleId": "taxi",
+      "route": "兴龙湖环湖测试段",
+      "distance": 5.8,
+      "duration": 36,
+      "score": 94,
+      "alerts": 3,
+      "high": 0,
+      "onlineRate": 100,
+      "integrity": 99.8,
+      "createdAt": "2026-07-13T00:00:00.000Z"
+    },
+    {
+      "id": "TRIP-002",
+      "vehicleId": "bus",
+      "route": "凤凰湖产业园测试段",
+      "distance": 6.4,
+      "duration": 42,
+      "score": 92,
+      "alerts": 4,
+      "high": 1,
+      "onlineRate": 99.9,
+      "integrity": 99.5,
+      "createdAt": "2026-07-13T00:00:00.000Z"
+    },
+    {
+      "id": "TRIP-003",
+      "vehicleId": "van",
+      "route": "茶山竹海坡道测试段",
+      "distance": 4.9,
+      "duration": 38,
+      "score": 89,
+      "alerts": 5,
+      "high": 1,
+      "onlineRate": 99.7,
+      "integrity": 99.2,
+      "createdAt": "2026-07-13T00:00:00.000Z"
+    }
+  ],
+  "installations": [
+    {
+      "vehicleId": "taxi",
+      "deviceId": "ZLS-BOX-001",
+      "plate": "YC-ROBOTAXI-EV-01",
+      "installDate": "2026-07-08",
+      "position": "副驾驶中控台内部",
+      "power": "车辆低压电源 12V/24V",
+      "dataInterface": "CAN Listen-only",
+      "installer": "测试工程师A",
+      "acceptance": "已验收",
+      "photos": [
+        {
+          "name": "设备外观照片",
+          "status": "已归档"
+        },
+        {
+          "name": "安装位置照片",
+          "status": "已归档"
+        },
+        {
+          "name": "线束连接照片",
+          "status": "已归档"
+        },
+        {
+          "name": "设备铭牌照片",
+          "status": "已归档"
+        }
+      ]
+    },
+    {
+      "vehicleId": "bus",
+      "deviceId": "ZLS-BOX-002",
+      "plate": "YC-SHUTTLE-MINIBUS-02",
+      "installDate": "2026-07-09",
+      "position": "车辆设备舱",
+      "power": "车辆低压电源 12V/24V",
+      "dataInterface": "CAN Listen-only",
+      "installer": "测试工程师B",
+      "acceptance": "已验收",
+      "photos": [
+        {
+          "name": "设备外观照片",
+          "status": "已归档"
+        },
+        {
+          "name": "安装位置照片",
+          "status": "已归档"
+        },
+        {
+          "name": "线束连接照片",
+          "status": "已归档"
+        },
+        {
+          "name": "设备铭牌照片",
+          "status": "已归档"
+        }
+      ]
+    },
+    {
+      "vehicleId": "van",
+      "deviceId": "ZLS-BOX-003",
+      "plate": "YC-LOGISTICS-VAN-03",
+      "installDate": "2026-07-10",
+      "position": "副驾驶中控台内部",
+      "power": "车辆低压电源 12V/24V",
+      "dataInterface": "CAN Listen-only",
+      "installer": "测试工程师C",
+      "acceptance": "已验收",
+      "photos": [
+        {
+          "name": "设备外观照片",
+          "status": "已归档"
+        },
+        {
+          "name": "安装位置照片",
+          "status": "已归档"
+        },
+        {
+          "name": "线束连接照片",
+          "status": "已归档"
+        },
+        {
+          "name": "设备铭牌照片",
+          "status": "已归档"
+        }
+      ]
+    }
+  ],
+  "audit": [
+    {
+      "time": "2026-07-13T00:00:00.000Z",
+      "actor": "system",
+      "action": "平台初始化",
+      "detail": "车主安全平台 V4.0 旗舰视觉版"
+    }
+  ],
+  "thresholds": {
+    "highDistance": 10,
+    "mediumDistance": 20,
+    "lowVisibility": 500,
+    "heartbeatDelay": 10,
+    "heartbeatOffline": 30
+  }
+}
